@@ -34,7 +34,7 @@ import com.mypc.jettrivia.util.Constants
 fun Questions(viewModel: QuestionsViewModel) {
     val questions = viewModel.data.value.data?.toMutableList()
     val initial_index = remember {
-        (0..1000).random()
+        (0..1).random()
     }
     val questionIndex = remember {
         mutableStateOf(initial_index)
@@ -71,8 +71,7 @@ fun QuestionDisplay(
                    // viewModel: QuestionsViewModel,
     onNextClick: (Int) -> Unit = { currentIndex ->
 
-
-        if (currentIndex < inicialIndex + Constants.MAX_NUMBER_QUESTIONS) {
+        if (currentIndex < inicialIndex + Constants.MAX_NUMBER_QUESTIONS - 1) {
             questionIndex.value = currentIndex + 1
         } else {
             gameEnded.value = true
@@ -118,11 +117,9 @@ fun QuestionDisplay(
             verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.Start) {
 
-            if(questionIndex.value >= 3) {
-                ShowProgress(score = questionIndex.value)
-            }
+            ShowProgress(score = questionIndex.value - inicialIndex + 1)
 
-            QuestionTracker(counter = questionIndex.value + 1, outOff = totalQuestion)
+            QuestionTracker(counter = questionIndex.value - inicialIndex + 1, outOff = Constants.MAX_NUMBER_QUESTIONS)
             DrawDottedLine(pathEffect = pathEffect)
             Column(modifier = Modifier.fillMaxHeight()) {
                 Text(
@@ -207,7 +204,7 @@ fun QuestionDisplay(
 
                 ), enabled =  !gameEnded.value && correctAnswerState.value == true
                 ) {
-                        Text(text = "Next", modifier = Modifier.padding(4.dp),
+                        Text(text = "Check", modifier = Modifier.padding(4.dp),
                         color = AppColors.mOffWhite, fontSize = 17.sp,
                         fontWeight = FontWeight.Bold)
                 }
@@ -239,52 +236,58 @@ fun ShowProgress(score:Int = 12) {
     val gradient = Brush.linearGradient(listOf(Color(0xFFF95075),Color(0xFFbe6be5)))
 
     val progressFactor = remember(score) {
-        mutableStateOf(score*0.005f)
+        mutableStateOf(score*(1.toFloat()/Constants.MAX_NUMBER_QUESTIONS.toFloat()))
     }
-    Row(modifier = Modifier
-        .padding(3.dp)
-        .fillMaxWidth()
-        .height(45.dp)
-        .border(
-            width = 4.dp,
 
-            brush = Brush.linearGradient(
-                colors = listOf(
-                    AppColors.mLigthPurple, AppColors.mLigthPurple
-                )
-            ), shape = RoundedCornerShape(35.dp)
-        )
-        .clip(
-            RoundedCornerShape(
-                topStartPercent = 50,
-                topEndPercent = 50,
-                bottomStartPercent = 50,
-                bottomEndPercent = 50
+    Box(modifier = Modifier.fillMaxWidth()
+        .padding(3.dp)
+        .height(45.dp)) {
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = 4.dp,
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        AppColors.mLigthPurple, AppColors.mLigthPurple
+                    )
+                ), shape = RoundedCornerShape(35.dp)
             )
-        )
-        .background(Color.Transparent), verticalAlignment = Alignment.CenterVertically)
-    {
-        Button(onClick = {}, contentPadding = PaddingValues(1.dp),
-        modifier = Modifier
-            .fillMaxWidth(progressFactor.value)
-            .background(brush = gradient),
-        enabled = false,
-        elevation = null,
-        colors = buttonColors(
-        backgroundColor = Color.Transparent,
-        disabledBackgroundColor = Color.Transparent)) {
-            Text(text = (score).toString(), modifier = Modifier
-                .clip(RoundedCornerShape(23.dp))
-                .wrapContentHeight()
-                .fillMaxWidth()
-                .padding(6.dp),
-                color = AppColors.mOffWhite,
-                textAlign = TextAlign.Center)
+            .clip(
+                RoundedCornerShape(
+                    topStartPercent = 50,
+                    topEndPercent = 50,
+                    bottomStartPercent = 50,
+                    bottomEndPercent = 50
+                )
+            )
+            .background(Color.Transparent), verticalAlignment = Alignment.CenterVertically)
+        {
+            Button(onClick = {}, contentPadding = PaddingValues(1.dp),
+                modifier = Modifier
+                    .fillMaxWidth(progressFactor.value)
+                    .background(brush = gradient),
+                enabled = false,
+                elevation = null,
+                colors = buttonColors(
+                    backgroundColor = Color.Transparent,
+                    disabledBackgroundColor = Color.Transparent)) {
+
+
+            }
+
 
         }
-
+        Text(text = (score).toString(), modifier = Modifier
+            .clip(RoundedCornerShape(23.dp))
+            .wrapContentHeight()
+            .fillMaxWidth()
+            .padding(6.dp),
+            color = AppColors.mOffWhite,
+            textAlign = TextAlign.Center)
 
     }
+
+
 
 }
 
