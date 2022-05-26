@@ -1,22 +1,20 @@
 package com.mypc.jettrivia.component
 
+import android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.ButtonDefaults.buttonColors
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -30,13 +28,21 @@ import androidx.compose.ui.unit.sp
 import com.mypc.jettrivia.model.QuestionItem
 import com.mypc.jettrivia.screens.QuestionsViewModel
 import com.mypc.jettrivia.util.AppColors
-import java.lang.Exception
+import com.mypc.jettrivia.util.Constants
 
 @Composable
 fun Questions(viewModel: QuestionsViewModel) {
     val questions = viewModel.data.value.data?.toMutableList()
+    val initial_index = remember {
+        (0..1000).random()
+    }
     val questionIndex = remember {
-        mutableStateOf(0)
+        mutableStateOf(initial_index)
+    }
+
+
+    val gameEnded = remember {
+        mutableStateOf(false)
     }
 
     if(viewModel.data.value.loading == true) {
@@ -48,7 +54,9 @@ fun Questions(viewModel: QuestionsViewModel) {
             null
         }
         if(questions != null) {
-            QuestionDisplay(question = question!!, questionIndex = questionIndex,totalQuestion = viewModel.getQuestionSize())
+            QuestionDisplay(question = question!!, questionIndex = questionIndex,
+                totalQuestion = viewModel.getQuestionSize(), gameEnded = gameEnded,
+                inicialIndex = initial_index)
         }
     }
 
@@ -59,11 +67,23 @@ fun Questions(viewModel: QuestionsViewModel) {
 fun QuestionDisplay(
     question: QuestionItem,
     questionIndex: MutableState<Int>,
+    gameEnded: MutableState<Boolean>,
                    // viewModel: QuestionsViewModel,
     onNextClick: (Int) -> Unit = { currentIndex ->
-        questionIndex.value = currentIndex + 1
+
+
+        if (currentIndex < inicialIndex + Constants.MAX_NUMBER_QUESTIONS) {
+            questionIndex.value = currentIndex + 1
+        } else {
+            gameEnded.value = true
+
+
+        }
+
+
     },
-    totalQuestion: Int = 100
+    totalQuestion: Int = 100,
+    inicialIndex: Int
 ) {
     val choicesState = remember(question) {
         question.choices.toMutableList()
@@ -82,6 +102,9 @@ fun QuestionDisplay(
         {
             answerState.value = it
             correctAnswerState.value = choicesState[it] == question.answer
+            if(correctAnswerState.value == false) {
+                gameEnded.value = true
+            }
         }
 
     }
@@ -139,6 +162,7 @@ fun QuestionDisplay(
                             updateAnswer(index)
                         },
                         modifier = Modifier.padding(start = 16.dp),
+                        enabled = !gameEnded.value,
                         colors = RadioButtonDefaults.
                         colors(
                             selectedColor =
@@ -170,8 +194,6 @@ fun QuestionDisplay(
                             
                         }//end anotated string
                         Text(text = anotatedString, modifier = Modifier.padding(6.dp))
-                    
-
                     }
                 }
 
@@ -183,7 +205,8 @@ fun QuestionDisplay(
                 colors = ButtonDefaults.buttonColors(
                     backgroundColor = AppColors.mBlue
 
-                )) {
+                ), enabled =  !gameEnded.value && correctAnswerState.value == true
+                ) {
                         Text(text = "Next", modifier = Modifier.padding(4.dp),
                         color = AppColors.mOffWhite, fontSize = 17.sp,
                         fontWeight = FontWeight.Bold)
@@ -194,22 +217,20 @@ fun QuestionDisplay(
     }
 }
 
-
 @Composable
 fun DrawDottedLine(pathEffect: PathEffect) {
 
- androidx.compose.foundation.Canvas(modifier = Modifier
-     .fillMaxWidth()
-     .height(1.dp),) {
+ androidx.compose.foundation.Canvas(
+     modifier = Modifier
+         .fillMaxWidth()
+         .height(1.dp),
+ ) {
      drawLine(color = AppColors.mLigthGray,
      start = Offset(0f,0f),
      end = Offset(size.width,y = 0f),
      pathEffect = pathEffect)
  }
 }
-
-
-
 
 @Preview
 @Composable
@@ -252,7 +273,8 @@ fun ShowProgress(score:Int = 12) {
         colors = buttonColors(
         backgroundColor = Color.Transparent,
         disabledBackgroundColor = Color.Transparent)) {
-            Text(text = (score).toString(), modifier = Modifier.clip(RoundedCornerShape(23.dp))
+            Text(text = (score).toString(), modifier = Modifier
+                .clip(RoundedCornerShape(23.dp))
                 .wrapContentHeight()
                 .fillMaxWidth()
                 .padding(6.dp),
@@ -265,11 +287,6 @@ fun ShowProgress(score:Int = 12) {
     }
 
 }
-
-
-
-
-
 
 @Composable
 fun QuestionTracker(counter:Int = 10,
