@@ -1,6 +1,5 @@
 package com.mypc.jettrivia.component
 
-import android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -29,9 +28,21 @@ import com.mypc.jettrivia.model.QuestionItem
 import com.mypc.jettrivia.screens.QuestionsViewModel
 import com.mypc.jettrivia.util.AppColors
 import com.mypc.jettrivia.util.Constants
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.concurrent.timer
+import kotlin.time.seconds
 
 @Composable
 fun Questions(viewModel: QuestionsViewModel) {
+
+    val scope = rememberCoroutineScope()
+
+    val snackBarState = remember {
+        SnackbarHostState()
+    }
     val questions = viewModel.data.value.data?.toMutableList()
     val initial_index = remember {
         (0..1).random()
@@ -40,6 +51,13 @@ fun Questions(viewModel: QuestionsViewModel) {
         mutableStateOf(initial_index)
     }
 
+    val score = remember {
+        mutableStateOf(0)
+    }
+
+    val time = remember {
+        mutableStateOf(30)
+    }
 
     val gameEnded = remember {
         mutableStateOf(false)
@@ -56,9 +74,12 @@ fun Questions(viewModel: QuestionsViewModel) {
         if(questions != null) {
             QuestionDisplay(question = question!!, questionIndex = questionIndex,
                 totalQuestion = viewModel.getQuestionSize(), gameEnded = gameEnded,
-                inicialIndex = initial_index)
+                inicialIndex = initial_index, scope = scope,snackBarState = snackBarState,
+                score = score,time = time)
         }
     }
+
+    SnackbarHost(hostState = snackBarState)
 
 }
 
@@ -68,14 +89,22 @@ fun QuestionDisplay(
     question: QuestionItem,
     questionIndex: MutableState<Int>,
     gameEnded: MutableState<Boolean>,
+    scope:CoroutineScope,
+    snackBarState: SnackbarHostState,
+    score:MutableState<Int>,
+    time:MutableState<Int>,
                    // viewModel: QuestionsViewModel,
     onNextClick: (Int) -> Unit = { currentIndex ->
 
         if (currentIndex < inicialIndex + Constants.MAX_NUMBER_QUESTIONS - 1) {
             questionIndex.value = currentIndex + 1
+            score.value = score.value + (questionIndex.value - inicialIndex)*10
+            time.value = 30
         } else {
             gameEnded.value = true
-
+            scope.launch {
+                snackBarState.showSnackbar("You Win!!")
+            }
 
         }
 
@@ -96,6 +125,21 @@ fun QuestionDisplay(
         mutableStateOf<Boolean?>(null)
 
     }
+    LaunchedEffect(key1 = time) {
+        while(true) {
+            delay(1000)
+            if(time.value > 0 && !gameEnded.value) {
+                time.value  = time.value - 1
+            }else if(time.value == 0) {
+                correctAnswerState.value = false
+                gameEnded.value = true
+                snackBarState.showSnackbar("OOps Time has gone Begin again!")
+                break
+            }
+
+
+        }
+    }
 
     val updateAnswer: (Int) -> Unit = remember(question) {
         {
@@ -103,10 +147,17 @@ fun QuestionDisplay(
             correctAnswerState.value = choicesState[it] == question.answer
             if(correctAnswerState.value == false) {
                 gameEnded.value = true
+                scope.launch {
+                    snackBarState.showSnackbar("OOps Wrong Answer Begin again!")
+                }
             }
         }
 
     }
+
+
+
+
     val pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f,10f),0f)
 
     Surface(modifier = Modifier
@@ -119,7 +170,9 @@ fun QuestionDisplay(
 
             ShowProgress(score = questionIndex.value - inicialIndex + 1)
 
-            QuestionTracker(counter = questionIndex.value - inicialIndex + 1, outOff = Constants.MAX_NUMBER_QUESTIONS)
+            InfoTracker(counter = questionIndex.value - inicialIndex + 1,
+                outOff = Constants.MAX_NUMBER_QUESTIONS,
+            score = score.value, timer = time.value )
             DrawDottedLine(pathEffect = pathEffect)
             Column(modifier = Modifier.fillMaxHeight()) {
                 Text(
@@ -231,7 +284,7 @@ fun DrawDottedLine(pathEffect: PathEffect) {
 
 @Preview
 @Composable
-fun ShowProgress(score:Int = 12) {
+fun ShowProgress(score:Int = 12,time:Int = 30) {
 
     val gradient = Brush.linearGradient(listOf(Color(0xFFF95075),Color(0xFFbe6be5)))
 
@@ -239,7 +292,8 @@ fun ShowProgress(score:Int = 12) {
         mutableStateOf(score*(1.toFloat()/Constants.MAX_NUMBER_QUESTIONS.toFloat()))
     }
 
-    Box(modifier = Modifier.fillMaxWidth()
+    Box(modifier = Modifier
+        .fillMaxWidth()
         .padding(3.dp)
         .height(45.dp)) {
         Row(modifier = Modifier
@@ -290,29 +344,72 @@ fun ShowProgress(score:Int = 12) {
 
 
 }
-
+@Preview
 @Composable
-fun QuestionTracker(counter:Int = 10,
-                    outOff:Int = 100) {
-    Text(text = buildAnnotatedString {
-        withStyle(style = ParagraphStyle(textIndent = TextIndent.None)){
-            withStyle(style = SpanStyle(color = AppColors.mLigthGray,
-                fontWeight = FontWeight.Bold,
-                fontSize = 27.sp) ){
+fun InfoTracker(counter:Int = 10,
+                outOff:Int = 100,score:Int = 0,timer:Int = 30) {
+
+
+    Row(modifier = Modifier
+        .fillMaxWidth()
+        .padding(20.dp),
+    verticalAlignment = Alignment.CenterVertically){
+        Text(text = buildAnnotatedString {
+            withStyle(style = ParagraphStyle(textIndent = TextIndent.None)){
+                withStyle(style = SpanStyle(color = AppColors.mLigthGray,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 27.sp) ){
                     append("Question $counter/")
 
+                }
+
+                withStyle(style = SpanStyle(color = AppColors.mLigthGray,
+                    fontWeight = FontWeight.Light,
+                    fontSize = 18.sp)
+                ){
+                    append("$outOff")
+                }
+
             }
 
-            withStyle(style = SpanStyle(color = AppColors.mLigthGray,
-                fontWeight = FontWeight.Light,
-                fontSize = 18.sp)
-            ){
-                append("$outOff")
-            }
+        })
 
+        Spacer(modifier = Modifier.fillMaxWidth(0.25f))
+
+        Column(horizontalAlignment = Alignment.Start, modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 60.dp),) {
+            Text(text = buildAnnotatedString {
+                withStyle(style = SpanStyle(color = AppColors.mOffWhite, fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp)){
+                    append("Score: ")
+                    withStyle(style = SpanStyle(color = AppColors.mOffWhite,
+                        fontWeight = FontWeight.Light,
+                        fontSize = 17.sp)){
+                        append("$score")
+                    }
+                }
+            }, textAlign = TextAlign.Left)
+
+            Text(text = buildAnnotatedString {
+                withStyle(style = SpanStyle(color = AppColors.mOffWhite, fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp)){
+                    append("Time: ")
+                    withStyle(style = SpanStyle(color = if(timer > 10) AppColors.mOffWhite
+                    else AppColors.mRed,
+                        fontWeight = FontWeight.Light,
+                        fontSize = 17.sp)){
+                        append("$timer")
+                    }
+                }
+            }, textAlign = TextAlign.Left)
         }
 
-    },
-    modifier = Modifier.padding(20.dp))
+    }
+
+
+
+
+
 
 }
