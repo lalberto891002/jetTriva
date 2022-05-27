@@ -82,6 +82,7 @@ fun Questions(viewModel: QuestionsViewModel) {
 }
 
 //@Preview(showBackground = true)
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun QuestionDisplay(
     question: QuestionItem,
@@ -181,70 +182,106 @@ fun QuestionDisplay(
                     modifier = Modifier
                         .padding(6.dp)
                         .align(alignment = Alignment.Start)
-                        .fillMaxHeight(0.3f),
+                        .height(100.dp),
                     fontSize = 17.sp,
                     color = AppColors.mOffWhite,
                     fontWeight = FontWeight.Bold,
                     lineHeight = 22.sp)
                 //choices
-                choicesState.forEachIndexed {
-                    index,answerText->
-                    Row(modifier = Modifier
-                        .padding(3.dp)
-                        .fillMaxWidth()
-                        .height(50.dp)
-                        .border(
-                            width = 4.dp, brush = Brush.linearGradient(
-                                colors = listOf(AppColors.mOffDarkPurple, AppColors.mOffDarkPurple),
-                            ), shape = RoundedCornerShape(15.dp)
-                        )
-                        .clip(
-                            RoundedCornerShape(
-                                topStartPercent = 50,
-                                topEndPercent = 50,
-                                bottomEndPercent = 50,
-                                bottomStartPercent = 50
-                            )
-                        )
-                        .background(Color.Transparent),
-                        verticalAlignment = Alignment.CenterVertically) {
-                        
-                        RadioButton(selected = (answerState.value == index), onClick = {
-                            updateAnswer(index)
-                        },
-                        modifier = Modifier.padding(start = 16.dp),
-                        enabled = !gameEnded.value,
-                        colors = RadioButtonDefaults.
-                        colors(
-                            selectedColor =
-                                if(correctAnswerState.value == true && index == answerState.value){
-                                    Color.Green.copy(alpha = 0.2f)
-                                }else {
-                                    AppColors.mRed.copy(alpha = 0.2f)
-                                }
-                        , unselectedColor = AppColors.mOffWhite))//end rb
 
-                        val anotatedString = buildAnnotatedString { 
-                            
-                            withStyle(
-                                style = SpanStyle(
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Light,
-                                    color =
-                                        if(correctAnswerState.value == true && index == answerState.value){
-                                            Color.Green
-                                        } else if(correctAnswerState.value == false && index == answerState.value){
-                                            AppColors.mRed
-                                        }else {
-                                            AppColors.mOffWhite
-                                        }
-                                )
-                            ){
-                                append(answerText)
-                            }//end with style
-                            
-                        }//end anotated string
-                        Text(text = anotatedString, modifier = Modifier.padding(6.dp))
+                Column(modifier = Modifier.height(300.dp)) {
+
+
+                    choicesState.forEachIndexed {
+                        index,answerText->
+
+                       val visible = remember {
+                            mutableStateOf(true)
+                        }
+
+                        Row(modifier = Modifier.height(50.dp)) {
+
+
+                                AnimatedVisibility(visible = visible.value,
+                                    enter = fadeIn(), exit = fadeOut()) {
+                                    Row(modifier = Modifier
+                                        .padding(3.dp)
+                                        .fillMaxWidth()
+                                        .fillMaxHeight()
+                                        .border(
+                                            width = 4.dp, brush = Brush.linearGradient(
+                                                colors = listOf(
+                                                    AppColors.mOffDarkPurple,
+                                                    AppColors.mOffDarkPurple
+                                                ),
+                                            ), shape = RoundedCornerShape(15.dp)
+                                        )
+                                        .clip(
+                                            RoundedCornerShape(
+                                                topStartPercent = 50,
+                                                topEndPercent = 50,
+                                                bottomEndPercent = 50,
+                                                bottomStartPercent = 50
+                                            )
+                                        )
+                                        .background(Color.Transparent),
+                                        verticalAlignment = Alignment.CenterVertically) {
+
+                                        RadioButton(selected = (answerState.value == index), onClick = {
+                                            updateAnswer(index)
+                                            scope.launch {
+                                                if(!gameEnded.value){
+                                                    visible.value = false
+                                                    repeat(3) {
+                                                        visible.value = false
+                                                        delay(300)
+                                                        visible.value = true
+                                                        delay(500)
+
+                                                    }
+                                                }
+
+                                            }
+                                        },
+                                            modifier = Modifier.padding(start = 16.dp),
+                                            enabled = !gameEnded.value,
+                                            colors = RadioButtonDefaults.
+                                            colors(
+                                                selectedColor =
+                                                if(correctAnswerState.value == true && index == answerState.value){
+                                                    Color.Green.copy(alpha = 0.2f)
+                                                }else {
+                                                    AppColors.mRed.copy(alpha = 0.2f)
+                                                }
+                                                , unselectedColor = AppColors.mOffWhite))//end rb
+
+                                        val anotatedString = buildAnnotatedString {
+
+                                            withStyle(
+                                                style = SpanStyle(
+                                                    fontSize = 15.sp,
+                                                    fontWeight = FontWeight.Light,
+                                                    color =
+                                                    if(correctAnswerState.value == true && index == answerState.value){
+                                                        Color.Green
+                                                    } else if(correctAnswerState.value == false && index == answerState.value){
+                                                        AppColors.mRed
+                                                    }else {
+                                                        AppColors.mOffWhite
+                                                    }
+                                                )
+                                            ){
+                                                append(answerText)
+                                            }//end with style
+
+                                        }//end anotated string
+                                        Text(text = anotatedString, modifier = Modifier.padding(6.dp))
+                                    }
+                                }
+                            }
+
+
+
                     }
                 }
 
