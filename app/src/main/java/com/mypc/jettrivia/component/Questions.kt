@@ -1,10 +1,6 @@
 package com.mypc.jettrivia.component
 
-import android.graphics.Paint
-import android.icu.number.Scale
 import androidx.compose.animation.*
-import androidx.compose.animation.core.repeatable
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -34,11 +30,8 @@ import com.mypc.jettrivia.screens.QuestionsViewModel
 import com.mypc.jettrivia.util.AppColors
 import com.mypc.jettrivia.util.Constants
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.concurrent.timer
-import kotlin.time.seconds
 
 @Composable
 fun Questions(viewModel: QuestionsViewModel) {
@@ -49,11 +42,11 @@ fun Questions(viewModel: QuestionsViewModel) {
         SnackbarHostState()
     }
     val questions = viewModel.data.value.data?.toMutableList()
-    val initial_index = remember {
+    val initialIndex = remember {
         (0..1).random()
     }
     val questionIndex = remember {
-        mutableStateOf(initial_index)
+        mutableStateOf(initialIndex)
     }
 
     val score = remember {
@@ -79,7 +72,7 @@ fun Questions(viewModel: QuestionsViewModel) {
         if(questions != null) {
             QuestionDisplay(question = question!!, questionIndex = questionIndex,
                 totalQuestion = viewModel.getQuestionSize(), gameEnded = gameEnded,
-                inicialIndex = initial_index, scope = scope,snackBarState = snackBarState,
+                inicialIndex = initialIndex, scope = scope,snackBarState = snackBarState,
                 score = score,time = time)
         }
     }
@@ -166,16 +159,6 @@ fun QuestionDisplay(
 
     val visibleTimer = remember {
         mutableStateOf(false)
-    }
-    LaunchedEffect(Unit) {
-        while(!gameEnded.value) {
-            delay(300)
-            visibleTimer.value = true
-            delay(700)
-            visibleTimer.value = false
-        }
-        visibleTimer.value = true
-
     }
 
     Surface(modifier = Modifier
@@ -417,14 +400,39 @@ fun InfoTracker(counter:Int = 10,
 
                 )
 
-                AnimatedVisibility(visible = visibleTimer.value,
+               /* AnimatedVisibility(visible = visibleTimer.value,
                     enter = slideInVertically({
                     -it/2
                     })+ fadeIn(),
                     exit =  slideOutVertically({
                        - it/2
                     })+ fadeOut()
-                ) {
+                )*/
+
+                AnimatedContent(
+                    targetState = timer,
+                    transitionSpec = {
+                        // Compare the incoming number with the previous number.
+                        if (targetState > initialState) {
+                            // If the target number is larger, it slides up and fades in
+                            // while the initial (smaller) number slides up and fades out.
+                            slideInVertically({
+                                it->it
+                            }) + fadeIn() with
+                                    slideOutVertically({it->-it})+ fadeOut()
+                        } else {
+                            // If the target number is smaller, it slides down and fades in
+                            // while the initial number slides down and fades out.
+                            slideInVertically({it->-it}) + fadeIn() with
+                                    slideOutVertically({it->it}) + fadeOut()
+                        }.using(
+                            // Disable clipping since the faded slide-in/out should
+                            // be displayed out of bounds.
+                            SizeTransform(clip = false)
+                        )
+                    })
+
+                {
                     Text(modifier = Modifier.padding(start = 5.dp),
                         text = "$timer",
                         color = if(timer > 10) AppColors.mOffWhite
