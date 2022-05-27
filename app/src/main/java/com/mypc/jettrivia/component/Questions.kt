@@ -1,5 +1,10 @@
 package com.mypc.jettrivia.component
 
+import android.graphics.Paint
+import android.icu.number.Scale
+import androidx.compose.animation.*
+import androidx.compose.animation.core.repeatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -126,7 +131,7 @@ fun QuestionDisplay(
 
     }
     LaunchedEffect(key1 = time) {
-        while(true) {
+        while(!gameEnded.value) {
             delay(1000)
             if(time.value > 0 && !gameEnded.value) {
                 time.value  = time.value - 1
@@ -134,7 +139,6 @@ fun QuestionDisplay(
                 correctAnswerState.value = false
                 gameEnded.value = true
                 snackBarState.showSnackbar("OOps Time has gone Begin again!")
-                break
             }
 
 
@@ -160,6 +164,20 @@ fun QuestionDisplay(
 
     val pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f,10f),0f)
 
+    val visibleTimer = remember {
+        mutableStateOf(false)
+    }
+    LaunchedEffect(Unit) {
+        while(!gameEnded.value) {
+            delay(300)
+            visibleTimer.value = true
+            delay(700)
+            visibleTimer.value = false
+        }
+        visibleTimer.value = true
+
+    }
+
     Surface(modifier = Modifier
         .fillMaxWidth()
         .fillMaxHeight(),
@@ -172,7 +190,7 @@ fun QuestionDisplay(
 
             InfoTracker(counter = questionIndex.value - inicialIndex + 1,
                 outOff = Constants.MAX_NUMBER_QUESTIONS,
-            score = score.value, timer = time.value )
+            score = score.value, timer = time.value, visibleTimer = visibleTimer )
             DrawDottedLine(pathEffect = pathEffect)
             Column(modifier = Modifier.fillMaxHeight()) {
                 Text(
@@ -329,7 +347,6 @@ fun ShowProgress(score:Int = 12,time:Int = 30) {
 
             }
 
-
         }
         Text(text = (score).toString(), modifier = Modifier
             .clip(RoundedCornerShape(23.dp))
@@ -342,13 +359,13 @@ fun ShowProgress(score:Int = 12,time:Int = 30) {
     }
 
 
-
 }
+@OptIn(ExperimentalAnimationApi::class)
 @Preview
 @Composable
 fun InfoTracker(counter:Int = 10,
-                outOff:Int = 100,score:Int = 0,timer:Int = 30) {
-
+                outOff:Int = 100,score:Int = 0,timer:Int = 30,
+                visibleTimer:MutableState<Boolean> = mutableStateOf(false)) {
 
     Row(modifier = Modifier
         .fillMaxWidth()
@@ -391,7 +408,36 @@ fun InfoTracker(counter:Int = 10,
                 }
             }, textAlign = TextAlign.Left)
 
-            Text(text = buildAnnotatedString {
+
+            Row {
+                Text(
+                    text = "Time:",
+                        color = AppColors.mOffWhite, fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp
+
+                )
+
+                AnimatedVisibility(visible = visibleTimer.value,
+                    enter = slideInVertically({
+                    -it/2
+                    })+ fadeIn(),
+                    exit =  slideOutVertically({
+                       - it/2
+                    })+ fadeOut()
+                ) {
+                    Text(modifier = Modifier.padding(start = 5.dp),
+                        text = "$timer",
+                        color = if(timer > 10) AppColors.mOffWhite
+                        else AppColors.mRed,
+                        fontWeight = FontWeight.Light,
+                        fontSize = 17.sp
+
+                    )
+                }
+
+            }
+
+           /* Text(text = buildAnnotatedString {
                 withStyle(style = SpanStyle(color = AppColors.mOffWhite, fontWeight = FontWeight.Bold,
                     fontSize = 17.sp)){
                     append("Time: ")
@@ -402,7 +448,7 @@ fun InfoTracker(counter:Int = 10,
                         append("$timer")
                     }
                 }
-            }, textAlign = TextAlign.Left)
+            }, textAlign = TextAlign.Left)*/
         }
 
     }
