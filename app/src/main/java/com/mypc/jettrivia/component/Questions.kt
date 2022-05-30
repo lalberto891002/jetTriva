@@ -26,7 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mypc.jettrivia.model.QuestionItem
-import com.mypc.jettrivia.screens.QuestionsViewModel
+import com.mypc.jettrivia.screens.viewmodels.QuestionsViewModel
 import com.mypc.jettrivia.util.AppColors
 import com.mypc.jettrivia.util.Constants
 import kotlinx.coroutines.CoroutineScope

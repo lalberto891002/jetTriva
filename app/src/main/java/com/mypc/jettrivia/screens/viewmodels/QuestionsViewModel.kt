@@ -1,6 +1,5 @@
-package com.mypc.jettrivia.screens
+package com.mypc.jettrivia.screens.viewmodels
 
-import android.animation.PropertyValuesHolder
 import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
@@ -12,7 +11,6 @@ import com.mypc.jettrivia.repository.QuestionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import java.lang.Exception
-import java.lang.IllegalStateException
 import javax.inject.Inject
 
 

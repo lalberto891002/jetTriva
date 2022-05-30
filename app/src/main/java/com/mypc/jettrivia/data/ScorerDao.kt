@@ -3,6 +3,7 @@ package com.mypc.jettrivia.data
 import androidx.room.*
 import com.mypc.jettrivia.model.TopScorers
 import com.mypc.jettrivia.util.Constants.MAX_NUMBER_SAVED_SCORERS
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ScorerDao {
@@ -23,6 +24,6 @@ interface ScorerDao {
     suspend fun getLessScorers(lineScore:Int):List<TopScorers>
 
     @Query("SELECT  * FROM tops_scorers_table ORDER BY total_score DESC LIMIT :quantity")
-    suspend fun getTopScorers(quantity:Int = MAX_NUMBER_SAVED_SCORERS):List<TopScorers>
+    suspend fun getTopScorers(quantity:Int = MAX_NUMBER_SAVED_SCORERS): Flow<List<TopScorers>>
 
 }
